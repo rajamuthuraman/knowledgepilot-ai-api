@@ -6,6 +6,7 @@ from src.rag.retrieval.utils import (
     get_project_document_ids,
     build_context_from_retrieved_chunks,
     generate_query_variations,
+    rrf_rank_and_fuse,
 )
 from typing import List, Dict
 from src.config.logging import get_logger, set_project_id

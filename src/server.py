@@ -15,10 +15,10 @@ logger.info("initializing_application", version="1.0.0")
 
 # Create FastAPI app
 app = FastAPI(
-    title="Six-Figure AI Engineering API",
-    description="Backend API for Six-Figure AI Engineering application",
+    title="KnowledgePilot AI API",
+    description="Backend API for the KnowledgePilot AI application",
     version="1.0.0",
-    redirect_slashes=False,  # Add this line
+    redirect_slashes=True,  # Add this line
 )
 
 # Add logging middleware (should be first to capture all requests)

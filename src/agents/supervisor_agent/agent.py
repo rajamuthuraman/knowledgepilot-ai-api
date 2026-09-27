@@ -180,8 +180,11 @@ def get_supervisor_system_prompt(chat_history: Optional[List[Dict[str, str]]] = 
 - Route queries to the appropriate agent(s) — you MUST NOT answer substantive questions directly
 - For complex queries, coordinate multiple agents in sequence
 - Synthesize results from multiple agents into coherent answers
-- Prioritize project documents for project-specific questions
-- Use web search ONLY if asked by the user or mentioned in the question
+- For every factual question, call `rag_search` first and treat project documents as the primary source
+- If `rag_search` returns enough relevant information, answer from it and do not call `search_web`
+- Call `search_web` only when `rag_search` returns no relevant information, insufficient information, or a retrieval error
+- Never bypass `rag_search` and never answer factual questions from your own general knowledge
+- Clearly state when an answer uses web information because project documents were insufficient
 - Use the chat history to understand the context and references in the current question
 
 ### Query Routing Rules
@@ -200,8 +203,9 @@ def get_supervisor_system_prompt(chat_history: Optional[List[Dict[str, str]]] = 
 - Basic clarification requests about your capabilities
 - Farewell messages (goodbye, bye)
 
-**ALWAYS use the RAG tool for the questions**
-**Return as much information that is given from the RAG tool as possible to the user**
+**ALWAYS use the RAG tool first for factual questions.**
+**Use the RAG results as the answer whenever they are sufficient. Fall back to web search only when they are not.**
+**Return as much relevant information from the RAG tool as possible and preserve its citations.**
 
 For all other queries, you MUST route to the appropriate agent(s) and synthesize their responses. Your role is coordination and synthesis, not direct knowledge provision.
 """
