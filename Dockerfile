@@ -1,4 +1,4 @@
-FROM python:3.13
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -21,7 +21,8 @@ COPY pyproject.toml poetry.lock* ./
 RUN poetry config virtualenvs.create false
 
 # Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry install --no-interaction --no-ansi --no-root \
+    && rm -rf /root/.cache/pypoetry /root/.cache/pip
 
 # Copy the rest of the application
 COPY . .

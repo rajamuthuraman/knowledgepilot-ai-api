@@ -1,4 +1,11 @@
-from fastapi import APIRouter, HTTPException
+import base64
+import hashlib
+import hmac
+import json
+import os
+import time
+
+from fastapi import APIRouter, HTTPException, Request
 from src.services.supabase import supabase
 from src.config.logging import get_logger
 
@@ -8,7 +15,7 @@ router = APIRouter(tags=["userRoutes"])
 
 
 @router.post("/create")
-async def create_user(clerk_webhook_data: dict):
+async def create_user(request: Request):
     """
     Payload structure : https://clerk.com/docs/guides/development/webhooks/overview#payload-structure
 
@@ -23,6 +30,32 @@ async def create_user(clerk_webhook_data: dict):
 
     """
     try:
+        webhook_secret = os.getenv("CLERK_WEBHOOK_SECRET")
+        if not webhook_secret:
+            logger.error("webhook_secret_missing")
+            raise HTTPException(status_code=503, detail="Webhook is not configured")
+
+        payload = await request.body()
+        headers = {
+            "svix-id": request.headers.get("svix-id", ""),
+            "svix-timestamp": request.headers.get("svix-timestamp", ""),
+            "svix-signature": request.headers.get("svix-signature", ""),
+        }
+        try:
+            timestamp = headers["svix-timestamp"]
+            if not timestamp or abs(time.time() - int(timestamp)) > 300:
+                raise ValueError("expired webhook")
+            signed_content = f'{headers["svix-id"]}.{timestamp}.'.encode() + payload
+            secret = base64.b64decode(webhook_secret.removeprefix("whsec_"))
+            expected = base64.b64encode(hmac.new(secret, signed_content, hashlib.sha256).digest()).decode()
+            signatures = headers["svix-signature"].split()
+            if not any(hmac.compare_digest(signature.removeprefix("v1,"), expected) for signature in signatures):
+                raise ValueError("signature mismatch")
+            clerk_webhook_data = json.loads(payload)
+        except (ValueError, json.JSONDecodeError, KeyError):
+            logger.warning("invalid_clerk_webhook_signature")
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
         logger.info("webhook_received", event_type=clerk_webhook_data.get("type") if isinstance(clerk_webhook_data, dict) else None)
 
         # Validate webhook payload structure

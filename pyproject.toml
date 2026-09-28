@@ -28,6 +28,7 @@ ragas = "^0.4.0"
 datasets = "^4.4.1"
 pytest = "^9.0.2"
 structlog = "^24.4.0"
+langgraph-prebuilt = "1.0.8"
 
 
 [build-system]

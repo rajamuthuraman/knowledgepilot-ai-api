@@ -85,6 +85,21 @@ async def create_project(
     set_user_id(current_user_clerk_id)
     try:
         logger.info("creating_project", name=project_data.name)
+
+        # Webhooks can be delayed or retried. Ensure every successfully
+        # authenticated Clerk user exists before inserting FK-dependent data.
+        existing_user = (
+            supabase.table("users")
+            .select("clerk_id")
+            .eq("clerk_id", current_user_clerk_id)
+            .execute()
+        )
+        if not existing_user.data:
+            supabase.table("users").insert(
+                {"clerk_id": current_user_clerk_id}
+            ).execute()
+            logger.info("user_created_during_project_creation")
+
         # Insert new project into database
         project_insert_data = {
             "name": project_data.name,

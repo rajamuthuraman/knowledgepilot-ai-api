@@ -1,5 +1,6 @@
 from src.services.supabase import supabase
 import os
+import tempfile
 import time
 from src.services.llm import openAI
 from src.services.awsS3 import s3_client
@@ -169,7 +170,9 @@ def download_content_and_partition(document_id: str, document: dict):
             s3_key = document["s3_key"]
             filename = document["filename"]
             file_type = filename.split(".")[-1].lower()
-            temp_file_path = f"/tmp/{document_id}.{file_type}"
+            temp_file_path = os.path.join(
+                tempfile.gettempdir(), f"{document_id}.{file_type}"
+            )
             logger.info("downloading_from_s3", document_id=document_id, s3_key=s3_key, file_type=file_type)
             s3_client.download_file(appConfig["s3_bucket_name"], s3_key, temp_file_path)
             logger.info("s3_download_completed", document_id=document_id)
@@ -179,7 +182,9 @@ def download_content_and_partition(document_id: str, document: dict):
             url = document["source_url"]
             logger.info("crawling_url", document_id=document_id, url=url)
             response = scrapingbee_client.get(url)
-            temp_file_path = f"/tmp/{document_id}.html"
+            temp_file_path = os.path.join(
+                tempfile.gettempdir(), f"{document_id}.html"
+            )
             with open(temp_file_path, "wb") as f:
                 f.write(response.content)
             logger.info("url_crawl_completed", document_id=document_id)
